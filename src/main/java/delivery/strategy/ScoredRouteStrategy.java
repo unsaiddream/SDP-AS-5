@@ -17,7 +17,7 @@ public abstract class ScoredRouteStrategy implements RouteStrategy {
         }).toList();
         List<RouteAssessment> eligible = assessments.stream().filter(RouteAssessment::eligible).toList();
         if (eligible.isEmpty()) {
-            String reasons = assessments.isEmpty() ? "Empty route list" : assessments.toString();
+            String reasons = assessments.isEmpty() ? "Empty route list" : assessments.stream().map(a -> a.route().id() + ": " + String.join(", ", a.rejectionReasons())).collect(java.util.stream.Collectors.joining("; "));
             throw new NoSuitableRouteException(getStrategyName() + ": no suitable route. " + reasons);
         }
         ToDoubleFunction<RouteAssessment> score = scoring(eligible);
