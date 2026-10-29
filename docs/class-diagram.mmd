@@ -1,0 +1,66 @@
+classDiagram
+    class RouteStrategy {
+        <<interface>>
+        +decide(routes, request) RouteDecision
+        +selectRoute(routes, request) Route
+        +getStrategyName() String
+    }
+    class ScoredRouteStrategy {
+        <<abstract>>
+        +decide(routes, request) RouteDecision
+        #scoring(eligible) ToDoubleFunction
+        #formula() String
+    }
+    class RoutePlanner {
+        -RouteStrategy strategy
+        +setStrategy(strategy)
+        +plan(routes, request) RouteDecision
+    }
+    class StrategySelector {
+        -Map strategies
+        +select(request) RouteStrategy
+    }
+    class Route {
+        +String id
+        +Location origin
+        +Location destination
+        +double distanceKm
+        +int estimatedMinutes
+        +double cost
+        +double carbonEmission
+        +boolean available
+        +int trafficLevel
+        +double additionalFees
+    }
+    class DeliveryRequest {
+        +DeliveryPriority priority
+        +Location origin
+        +Location destination
+        +double maxBudget
+        +int maxDeliveryMinutes
+        +boolean ecoPreferred
+        +double maxEmission
+        +Set prohibitedRouteIds
+    }
+    RoutePlanner o--> RouteStrategy : delegates
+    StrategySelector o--> RouteStrategy : injected mapping
+    StrategySelector ..> DeliveryRequest : reads
+    RouteStrategy <|.. ScoredRouteStrategy
+    ScoredRouteStrategy <|-- FastestRouteStrategy
+    ScoredRouteStrategy <|-- CheapestRouteStrategy
+    ScoredRouteStrategy <|-- EcoFriendlyRouteStrategy
+    ScoredRouteStrategy <|-- BalancedRouteStrategy
+    ScoredRouteStrategy <|-- DistanceFirstStrategy
+    ScoredRouteStrategy ..> RouteConstraints : filters before scoring
+    ScoredRouteStrategy ..> RouteMetrics : computes time and cost
+    ScoredRouteStrategy ..> RouteDecision : creates
+    RouteDecision --> Route : selectedRoute
+    RouteDecision --> RouteAssessment : assessments
+    RouteAssessment --> Route
+    RouteAssessment --> RouteMetrics
+    Route --> Location
+    DeliveryRequest --> Location
+    DeliveryRequest --> DeliveryPriority
+    RoutePlanner ..> DeliveryRequest
+    RoutePlanner ..> RouteDecision
+    StrategyComparison ..> RouteStrategy : executes each

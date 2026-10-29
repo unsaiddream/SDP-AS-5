@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor Client
+    participant Selector as StrategySelector
+    participant Planner as RoutePlanner
+    participant Fastest as FastestRouteStrategy
+    participant Metrics as RouteMetrics
+    participant Constraints as RouteConstraints
+    Client->>Selector: select(urgentRequest)
+    Selector-->>Client: fastest strategy from mapping
+    Client->>Planner: setStrategy(fastest)
+    Client->>Planner: plan(routes, urgentRequest)
+    Planner->>Fastest: decide(routes, urgentRequest)
+    Note over Fastest: decide inherited from ScoredRouteStrategy
+    loop Each candidate route
+        Fastest->>Metrics: of(route, urgentRequest)
+        Metrics-->>Fastest: finalMinutes, totalCost
+        Fastest->>Constraints: violations(route, request, metrics)
+        Constraints-->>Fastest: rejection reasons
+    end
+    alt At least one feasible route
+        Fastest->>Fastest: scoring(eligible), minimum score then route id
+        Fastest-->>Planner: RouteDecision with scores and rejection reasons
+        Planner-->>Client: RouteDecision
+    else No feasible route
+        Fastest-->>Planner: throw NoSuitableRouteException
+        Planner-->>Client: propagate exception
+    end
